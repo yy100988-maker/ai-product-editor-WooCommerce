@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 第三方图片翻译通道：百度翻译开放平台图片翻译（fanyi-api, APP ID + 密钥）。
  * 规格来源：官方《图片翻译API接入文档》(fanyi-api.baidu.com/doc/26)，浏览器实页核对。
@@ -146,7 +146,7 @@ class AIPE_ImgApi {
         @unlink($tmp);
         $code = $j['error_code'] ?? null;
         $ok_codes = [0, '0', 69002, 69003, 69004]; // 超时/识别失败/内容为空都说明签名已过
-        if (in_array($code, $ok_codes, true)) {
+        if (in_array((string) $code, array_map('strval', $ok_codes), true)) {
             return ['ok' => true, 'code' => (string) $code];
         }
         throw new Exception('AIPE_PROVIDER@baidu:' . ($code === null ? '?' : $code) . ':' . mb_substr((string) ($j['error_msg'] ?? 'unknown'), 0, 160));

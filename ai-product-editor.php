@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Plugin Name: AI 产品编辑器 (AI Product Editor for WooCommerce)
  * Description: 导入后在商品编辑页直接做 AI 编辑：标题/属性词 LLM 翻译（SKU 编码不动）、图片 AI 翻译（图内文字擦除重绘）、图片 AI 生成。Key 直连供应商，不经过 SaaS。
@@ -26,6 +26,7 @@ require_once AIPE_DIR . 'includes/class-settings.php';
 require_once AIPE_DIR . 'includes/class-client.php';
 require_once AIPE_DIR . 'includes/class-translate.php';
 require_once AIPE_DIR . 'includes/class-imagetrans.php';
+require_once AIPE_DIR . 'includes/class-imgapi.php';
 require_once AIPE_DIR . 'includes/class-imagegen.php';
 require_once AIPE_DIR . 'includes/class-jobs.php';
 require_once AIPE_DIR . 'includes/class-product.php';
@@ -82,9 +83,8 @@ add_action('before_woocommerce_init', function () {
 add_action('plugins_loaded', function () {
     load_plugin_textdomain('aipe', false, dirname(plugin_basename(__FILE__)) . '/languages');
     AIPE_Jobs::init();
-    if (is_admin()) {
-        AIPE_Admin::init();
-    }
+    // AJAX hook 必须无条件注册（is_admin() 在 AJAX 上下文返回 false）
+    AIPE_Admin::init();
 });
 
 // 异步任务执行：Action Scheduler 动作名 aipe_run_job；无 AS 时用 WP-Cron 单次事件兜底（见 AIPE_Jobs::dispatch）。
