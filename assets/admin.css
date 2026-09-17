@@ -1,0 +1,21 @@
+﻿/* AI 产品编辑器后台样式 */
+.aipe-box h4 { margin: 1.2em 0 .5em; }
+.aipe-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: .5em 0; }
+.aipe-status { color: #2271b1; }
+.aipe-status.aipe-bad { color: #b32d2e; }
+.aipe-table { margin-top: .5em; }
+.aipe-imgs { display: flex; gap: 12px; flex-wrap: wrap; }
+.aipe-img { width: 220px; border: 1px solid #ccd0d4; background: #fff; padding: 6px; }
+.aipe-thumb { position: relative; }
+.aipe-thumb img { width: 100%; height: 150px; object-fit: contain; background: #f6f7f7; display: block; }
+/* 译文覆盖层（对标 MoeTranslate 悬浮窗）：气泡按 0-1000 框定位 */
+.aipe-overlay { position: absolute; inset: 0; pointer-events: none; }
+.aipe-bubble { position: absolute; background: rgba(255,255,255,.92); border: 1px solid #2271b1;
+  border-radius: 3px; color: #1d2327; font-size: 11px; line-height: 1.2; padding: 1px 3px;
+  overflow: hidden; pointer-events: auto; cursor: text; }
+.aipe-img-meta { display: flex; justify-content: space-between; align-items: center; margin: 4px 0; font-size: 12px; }
+.aipe-badge { background: #2271b1; color: #fff; border-radius: 3px; padding: 0 5px; font-size: 11px; }
+.aipe-img-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.aipe-auto { font-size: 12px; color: #50575e; }
+.aipe-job-status { font-size: 12px; color: #2271b1; min-height: 1.2em; margin-top: 4px; }
+.aipe-wrap .ul-disc { list-style: disc; margin-left: 2em; }
