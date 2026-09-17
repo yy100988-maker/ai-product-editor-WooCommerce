@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * OpenAI 协议 HTTP 客户端：chat（含 vision image_url）、images/generations、images/edits。
  * 所有供应商差异收敛在 AIPE_Settings::routes()，这里只认 OpenAI 形状。

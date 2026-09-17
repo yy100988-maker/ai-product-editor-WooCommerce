@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 离线测试：设置/文本翻译/任务/商品落库（无需 WP，HTTP 全剧本模拟）。
  * 用法：php tests/test-offline.php

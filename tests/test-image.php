@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 离线测试：OCR 解析/合并 + GD 擦除重绘（真实出图到系统临时目录）。
  * 用法：php tests/test-image.php（需要 GD；无 GD 时只跑纯函数部分）

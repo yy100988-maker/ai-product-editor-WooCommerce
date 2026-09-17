@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 图片 AI 翻译（管线对标 MoeTranslate v5.2.0，适配 PHP/GD 与 Vision 模型）。
  *

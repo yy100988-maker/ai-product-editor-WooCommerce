@@ -1,4 +1,4 @@
-﻿# AI 产品编辑器 (AI Product Editor for WooCommerce)
+# AI 产品编辑器 (AI Product Editor for WooCommerce)
 
 导入后在**商品编辑页**直接做 AI 编辑。独立插件，对所有来源的商品生效（1688 / 店小秘 / 手工建品）。
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 设置：供应商（OpenAI 协议）+ 语言 + 术语库 + 图片输出。Key 存 wp_options（autoload=false），页面上脱敏显示。
  *

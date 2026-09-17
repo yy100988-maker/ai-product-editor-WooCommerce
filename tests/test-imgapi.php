@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 离线测试：百度 fanyi 图片翻译通道（签名/解析/缓存/设置）。HTTP 全剧本模拟。
  * 用法：php tests/test-imgapi.php

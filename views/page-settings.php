@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 设置页模板。变量：$s（设置）、$notice、$gd、$font。
 defined('ABSPATH') || exit;
 ?>

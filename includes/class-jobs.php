@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 异步任务：aipe_jobs 表 + Action Scheduler（有则用）/ WP-Cron 单次事件兜底。
  * kind: image_translate | image_generate | image_edit

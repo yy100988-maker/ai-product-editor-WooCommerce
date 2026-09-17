@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * AIPE 离线测试桩：WP/WC/HTTP/DB 全内存模拟。
  * 用法：require 本文件后再 require 被测类。

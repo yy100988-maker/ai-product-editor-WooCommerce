@@ -19,12 +19,55 @@ class AIPE_Admin {
         add_action('admin_enqueue_scripts', [__CLASS__, 'assets']);
         add_action('admin_notices', [__CLASS__, 'notices']);
 
+        // 我们的 AJAX 请求：尽早接管输出缓冲，把其他插件在请求期间写出的
+        // BOM / PHP 警告文本全部吞掉，保证响应体从第一个字节起就是我们的 JSON。
+        if (self::is_our_ajax()) {
+            add_action('plugins_loaded', [__CLASS__, 'start_clean_buffer'], 0);
+        }
+
         add_action('wp_ajax_aipe_preview_text', [__CLASS__, 'ajax_preview_text']);
         add_action('wp_ajax_aipe_apply_text', [__CLASS__, 'ajax_apply_text']);
         add_action('wp_ajax_aipe_preview_image', [__CLASS__, 'ajax_preview_image']);
         add_action('wp_ajax_aipe_create_job', [__CLASS__, 'ajax_create_job']);
         add_action('wp_ajax_aipe_test_baidu', [__CLASS__, 'ajax_test_baidu']);
         add_action('wp_ajax_aipe_job_status', [__CLASS__, 'ajax_job_status']);
+    }
+
+    /**
+     * 当前请求是不是本插件的 AJAX 调用。
+     */
+    protected static function is_our_ajax() {
+        $action = isset($_REQUEST['action']) ? (string) $_REQUEST['action'] : '';
+        return strpos($action, 'aipe_') === 0;
+    }
+
+    /**
+     * 开一个过滤型缓冲：任何被 echo 出来的内容都不进响应体。
+     *
+     * 实测本站有其他插件（疑似 woo-multi-currency）在 wp-load 阶段就 echo 了 7 个 UTF-8 BOM，
+     * 污染所有 AJAX 响应。json_out() 写 JSON 前会清掉这层缓冲。
+     */
+    public static function start_clean_buffer() {
+        if (!self::is_our_ajax()) {
+            return;
+        }
+        // 关掉别人先开的缓冲（内容丢弃），再由我们独占一个干净的
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        ob_start();
+        // 万一有插件在我们之后又 echo，shutdown 时再清一次
+        add_action('shutdown', [__CLASS__, 'flush_clean'], 0);
+    }
+
+    /**
+     * 请求收尾：确保响应体只剩我们要的 JSON（清掉任何后追加的字节）。
+     */
+    public static function flush_clean() {
+        // json_out() 已经 exit，走到这里说明 handler 没正常返回，兜底清一次
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
     }
 
     public static function menu() {
@@ -157,19 +200,27 @@ class AIPE_Admin {
     /**
      * 输出 JSON 并结束请求。
      *
-     * 其他插件（实测 woo-multi-currency）可能在请求里先输出 BOM/空白，
-     * 直接用 wp_send_json_* 会让响应前面带脏字节，前端 JSON.parse 失败。
-     * 这里先清掉所有已开的输出缓冲，再发纯 JSON。
+     * 实测：其他插件（woo-multi-currency）在请求期间会 setcookie/echo，导致响应体前面
+     * 混入 BOM 或 PHP 警告文本，前端 JSON.parse 直接失败。
+     * 这里逐层清干净所有输出缓冲后，再把 JSON 写出去，并强制指定 Content-Length，
+     * 让任何后续追加的字节都落在声明的长度之外（浏览器会忽略）。
      */
     protected static function json_out($payload, $status = 200) {
+        $json = wp_json_encode($payload);
         while (ob_get_level() > 0) {
             ob_end_clean();
         }
-        nocache_headers();
-        if (!headers_sent()) {
-            header('Content-Type: application/json; charset=utf-8', true, (int) $status);
+        // 关掉之后可能又有插件重新开缓冲/追加内容，这里再清一次
+        while (ob_get_level() > 0) {
+            ob_end_clean();
         }
-        echo wp_json_encode($payload);
+        if (!headers_sent()) {
+            nocache_headers();
+            header('Content-Type: application/json; charset=utf-8', true, (int) $status);
+            header('Content-Length: ' . strlen($json));
+            header('X-Content-Type-Options: nosniff');
+        }
+        echo $json;
         exit;
     }
 

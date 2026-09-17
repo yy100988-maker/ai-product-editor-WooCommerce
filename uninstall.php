@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 卸载：只删插件自己的表和设置，不删商品和媒体（与 dxm-importer 同策略）。
 defined('WP_UNINSTALL_PLUGIN') || exit;
 

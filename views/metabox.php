@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // 商品编辑页 metabox 模板。变量：$post、$data（AIPE_Product::collect）、$jobs、$templates。
 defined('ABSPATH') || exit;
 $pid = (int) $post->ID;
