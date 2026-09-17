@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AI 产品编辑器 (AI Product Editor for WooCommerce)
  * Description: 导入后在商品编辑页直接做 AI 编辑：标题/属性词 LLM 翻译（SKU 编码不动）、图片 AI 翻译（图内文字擦除重绘）、图片 AI 生成。Key 直连供应商，不经过 SaaS。
- * Version: 0.1.0
+ * Version: 0.1.1
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: vtetech
@@ -17,7 +17,7 @@
 
 defined('ABSPATH') || exit;
 
-define('AIPE_VER', '0.1.0');
+define('AIPE_VER', '0.1.1');
 define('AIPE_DIR', plugin_dir_path(__FILE__));
 define('AIPE_URL', plugin_dir_url(__FILE__));
 define('AIPE_FILE', __FILE__);
@@ -91,3 +91,4 @@ add_action('plugins_loaded', function () {
 add_action('aipe_run_job', function ($job_id) {
     AIPE_Jobs::run((int) $job_id);
 }, 10, 1);
+
