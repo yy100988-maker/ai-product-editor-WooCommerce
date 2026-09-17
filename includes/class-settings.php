@@ -19,10 +19,11 @@ class AIPE_Settings {
             'source_lang' => 'zh',
             'img_source' => 'vision', // vision=Vision 模型 OCR；baidu=百度翻译开放平台图片翻译
             'target_lang' => 'en',
-            'fallback_order' => ['siliconflow', 'openrouter'],
+            // agnes 优先：实测 chat/vision/image 三项全通，SiliconFlow 作兜底
+            'fallback_order' => ['openrouter', 'siliconflow'],
             'providers' => [
                 'siliconflow' => [
-                    'label' => 'SiliconFlow（主）',
+                    'label' => 'SiliconFlow（备）',
                     'base_url' => 'https://api.siliconflow.cn/v1',
                     'api_key' => '',
                     'timeout_s' => 60,
@@ -33,14 +34,14 @@ class AIPE_Settings {
                     ],
                 ],
                 'openrouter' => [
-                    'label' => 'OpenRouter（备）',
-                    'base_url' => 'https://openrouter.ai/api/v1',
+                    'label' => 'Agnes（主）',
+                    'base_url' => 'https://apihub.agnes-ai.com/v1',
                     'api_key' => '',
                     'timeout_s' => 90,
                     'models' => [
-                        'chat' => 'qwen/qwen3-32b:free',
-                        'vision' => 'qwen/qwen2.5-vl-72b-instruct:free',
-                        'image' => '',
+                        'chat' => 'agnes-2.5-flash',
+                        'vision' => 'agnes-2.5-flash',
+                        'image' => 'agnes-image-2.5-flash',
                     ],
                 ],
             ],
@@ -109,7 +110,8 @@ class AIPE_Settings {
                 $order[] = $id;
             }
         }
-        $s['fallback_order'] = $order ?: array_keys($s['providers']);
+        // 一个都没勾时保留现有顺序（不要重置成出厂顺序，否则取消勾选后主供应商会变）
+        $s['fallback_order'] = $order ?: $s['fallback_order'];
 
         $img = $post['image'] ?? [];
         $s['image']['max_width'] = max(0, (int) ($img['max_width'] ?? $s['image']['max_width']));

@@ -13,7 +13,18 @@
 
 1. 把本目录（`ai-product-editor`）上传到 `/wp-content/plugins/`，后台启用
 2. 环境：WordPress 6.4+，WooCommerce 8.0+，PHP 7.4+；图片翻译需要 `gd` 扩展
-3. 进 **WooCommerce → AI 产品编辑** 填供应商 Key（OpenAI 协议即可，默认 SiliconFlow 主 + OpenRouter 备）
+3. 进 **WooCommerce → AI 产品编辑** 填供应商 Key（OpenAI 协议即可，默认 **Agnes 主 + SiliconFlow 备**）
+
+### 默认供应商（已实测全通）
+
+| 用途 | 模型 |
+|---|---|
+| 文本翻译 | `agnes-2.5-flash` |
+| 视觉 OCR | `agnes-2.5-flash` |
+| 图片生成 | `agnes-image-2.5-flash` |
+
+网关：`https://apihub.agnes-ai.com/v1`（OpenAI 协议兼容）。
+设置页可切换顺序；**取消勾选某个供应商时不会重置顺序**（保留当前主供应商）。
 
 ## 使用
 
