@@ -1,4 +1,4 @@
-﻿/* AI 产品编辑器：文本预览→应用（同步）；图片先覆盖预览→确认重绘（异步任务+轮询）。无依赖。 */
+/* AI 产品编辑器：文本预览→应用（同步）；图片先覆盖预览→确认重绘（异步任务+轮询）。无依赖。 */
 (function () {
   'use strict';
 
@@ -8,7 +8,18 @@
     fd.append('nonce', AIPE.nonce);
     Object.keys(data || {}).forEach(function (k) { fd.append(k, data[k]); });
     return fetch(AIPE.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); });
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          // 剥掉 BOM，避免 PHP 输出里的 \uFEFF 让 JSON.parse 失败
+          txt = txt.replace(/^\uFEFF+/, '').trim();
+          try {
+            return JSON.parse(txt);
+          } catch (e) {
+            // 非 JSON（多为 PHP 警告/Fatal 或被拦截），把原文带出来便于定位
+            throw new Error('服务端返回了非 JSON 内容：' + txt.slice(0, 200));
+          }
+        });
+      });
   }
 
   function setStatus(el, msg, bad) {

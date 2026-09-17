@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 后台：Woo 子菜单设置页 + 商品编辑页 metabox + AJAX。
  *
@@ -141,13 +141,36 @@ class AIPE_Admin {
     // ---------- AJAX ----------
 
     protected static function check($post_id = 0) {
-        check_ajax_referer(self::NONCE, 'nonce');
+        $nonce = isset($_POST['nonce']) ? (string) $_POST['nonce'] : '';
+        if (!wp_verify_nonce($nonce, self::NONCE)) {
+            // 不用 check_ajax_referer：它 wp_die('-1') 返回非 JSON，前端只会看到 "not valid JSON"
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_BAD_NONCE', 'detail' => '页面 nonce 已过期，请刷新页面后重试']], 403);
+        }
         if ($post_id && !current_user_can('edit_post', $post_id)) {
-            wp_send_json_error(['code' => 'AIPE_FORBIDDEN'], 403);
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_FORBIDDEN']], 403);
         }
         if (!$post_id && !current_user_can('manage_woocommerce')) {
-            wp_send_json_error(['code' => 'AIPE_FORBIDDEN'], 403);
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_FORBIDDEN']], 403);
         }
+    }
+
+    /**
+     * 输出 JSON 并结束请求。
+     *
+     * 其他插件（实测 woo-multi-currency）可能在请求里先输出 BOM/空白，
+     * 直接用 wp_send_json_* 会让响应前面带脏字节，前端 JSON.parse 失败。
+     * 这里先清掉所有已开的输出缓冲，再发纯 JSON。
+     */
+    protected static function json_out($payload, $status = 200) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        nocache_headers();
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8', true, (int) $status);
+        }
+        echo wp_json_encode($payload);
+        exit;
     }
 
     /**
@@ -174,15 +197,15 @@ class AIPE_Admin {
             $label_map = AIPE_Translate::terms(array_unique($labels), $s);
             $value_map = AIPE_Translate::terms(array_unique($values), $s);
             unset($label_map['_meta'], $value_map['_meta']);
-            wp_send_json_success([
+            self::json_out(['success' => true, 'data' => [
                 'title_en' => $title_r['text'],
                 'name_map' => $label_map,
                 'value_map' => $value_map,
                 'cached' => $title_r['cached'],
                 'provider' => $title_r['provider'],
-            ]);
+            ]]);
         } catch (Exception $e) {
-            wp_send_json_error(['code' => explode(':', $e->getMessage())[0]]);
+            self::json_out(['success' => false, 'data' => ['code' => explode(':', $e->getMessage())[0]]]);
         }
     }
 
@@ -204,9 +227,9 @@ class AIPE_Admin {
                 AIPE_Product::apply_title($pid, $title);
             }
             $r = AIPE_Product::apply_attributes($pid, $names, $values);
-            wp_send_json_success($r);
+            self::json_out(['success' => true, 'data' => $r]);
         } catch (Exception $e) {
-            wp_send_json_error(['code' => explode(':', $e->getMessage())[0]]);
+            self::json_out(['success' => false, 'data' => ['code' => explode(':', $e->getMessage())[0]]]);
         }
     }
 
@@ -247,13 +270,13 @@ class AIPE_Admin {
         self::check($pid);
         $att = (int) ($_POST['attachment_id'] ?? 0);
         if (!$att) {
-            wp_send_json_error(['code' => 'AIPE_NO_IMAGE']);
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_NO_IMAGE']]);
         }
         try {
             $items = AIPE_ImageTrans::preview($att);
-            wp_send_json_success(['items' => $items]);
+            self::json_out(['success' => true, 'data' => ['items' => $items]]);
         } catch (Exception $e) {
-            wp_send_json_error(['code' => explode(':', $e->getMessage())[0]]);
+            self::json_out(['success' => false, 'data' => ['code' => explode(':', $e->getMessage())[0]]]);
         }
     }
 
@@ -266,7 +289,7 @@ class AIPE_Admin {
         self::check($pid);
         $kind = sanitize_key($_POST['kind'] ?? '');
         if (!in_array($kind, ['image_translate', 'image_generate', 'image_edit'], true)) {
-            wp_send_json_error(['code' => 'AIPE_BAD_KIND']);
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_BAD_KIND']]);
         }
         $items = json_decode(wp_unslash($_POST['items'] ?? ''), true);
         $payload = [
@@ -279,11 +302,11 @@ class AIPE_Admin {
             'items' => is_array($items) ? array_slice($items, 0, 60) : [],
         ];
         if (in_array($kind, ['image_translate', 'image_edit'], true) && !$payload['attachment_id']) {
-            wp_send_json_error(['code' => 'AIPE_NO_IMAGE']);
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_NO_IMAGE']]);
         }
         $job_id = AIPE_Jobs::create($pid, $kind, $payload);
         AIPE_Jobs::dispatch($job_id);
-        wp_send_json_success(['job_id' => $job_id]);
+        self::json_out(['success' => true, 'data' => ['job_id' => $job_id]]);
     }
 
     /**
@@ -293,9 +316,9 @@ class AIPE_Admin {
         self::check();
         try {
             $r = AIPE_ImgApi::test_auth(AIPE_Settings::get());
-            wp_send_json_success($r);
+            self::json_out(['success' => true, 'data' => $r]);
         } catch (Exception $e) {
-            wp_send_json_error(['code' => explode(':', $e->getMessage())[0], 'detail' => $e->getMessage()]);
+            self::json_out(['success' => false, 'data' => ['code' => explode(':', $e->getMessage())[0], 'detail' => $e->getMessage()]]);
         }
     }
 
@@ -304,16 +327,16 @@ class AIPE_Admin {
         self::check();
         $job = AIPE_Jobs::get($job_id);
         if (!$job) {
-            wp_send_json_error(['code' => 'AIPE_NO_JOB']);
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_NO_JOB']]);
         }
         if (!current_user_can('edit_post', (int) $job->product_id)) {
-            wp_send_json_error(['code' => 'AIPE_FORBIDDEN'], 403);
+            self::json_out(['success' => false, 'data' => ['code' => 'AIPE_FORBIDDEN']], 403);
         }
-        wp_send_json_success([
+        self::json_out(['success' => true, 'data' => [
             'status' => $job->status,
             'error_code' => $job->error_code,
             'result' => $job->result ? json_decode($job->result, true) : null,
-        ]);
+        ]]);
     }
 }
 
