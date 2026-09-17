@@ -231,3 +231,34 @@
     });
   }
 })();
+/* 设置页：百度连接测试（独立作用域，设置页无 .aipe-box 照样跑）。 */
+(function () {
+  'use strict';
+  var btn = document.getElementById('aipe-baidu-test');
+  if (!btn || typeof AIPE === 'undefined') return;
+  btn.addEventListener('click', function () {
+    var st = document.getElementById('aipe-baidu-test-status');
+    st.classList.remove('aipe-bad');
+    st.textContent = '测试中…（请先保存设置再测）';
+    btn.disabled = true;
+    var fd = new FormData();
+    fd.append('action', 'aipe_test_baidu');
+    fd.append('nonce', AIPE.nonce);
+    fetch(AIPE.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        btn.disabled = false;
+        if (j.success) {
+          st.textContent = '连接成功（百度返回码 ' + j.data.code + '，鉴权通过）';
+        } else {
+          st.textContent = '失败：' + (j.data.detail || j.data.code);
+          st.classList.add('aipe-bad');
+        }
+      })
+      .catch(function (e) {
+        btn.disabled = false;
+        st.textContent = '请求失败：' + e.message;
+        st.classList.add('aipe-bad');
+      });
+  });
+})();

@@ -69,6 +69,26 @@ defined('ABSPATH') || exit;
             </table>
         <?php endforeach; ?>
 
+        <h2 class="title">图片翻译来源</h2>
+        <table class="form-table">
+            <tr><th>来源</th><td>
+                <label><input type="radio" name="img_source" value="vision" <?php checked($s['img_source'] ?? 'vision', 'vision'); ?>> Vision 模型 OCR（走上面的供应商，需配 vision 模型）</label><br>
+                <label><input type="radio" name="img_source" value="baidu" <?php checked($s['img_source'] ?? 'vision', 'baidu'); ?>> 百度翻译开放平台图片翻译（APP ID + 密钥）</label>
+                <p class="description">百度通道：OCR+翻译+实景回填一次完成，比 Vision 便宜、版式还原更好；目标语言仅支持百度列表（en/ms 等，无 th/vi/es）。文档：fanyi-api.baidu.com/doc/26</p>
+            </td></tr>
+            <tr><th>百度 APP ID</th><td><input type="text" name="imgapi[baidu][appid]" value="<?php echo esc_attr($s['imgapi']['baidu']['appid'] ?? ''); ?>" class="regular-text"></td></tr>
+            <tr><th>百度密钥</th><td>
+                <input type="password" name="imgapi[baidu][key]" value="<?php echo ($s['imgapi']['baidu']['key'] ?? '') !== '' ? '***' : ''; ?>" class="regular-text" autocomplete="new-password">
+                <?php if (!empty($s['imgapi']['baidu']['key'])) : ?><span class="description">已填写（●●●●<?php echo esc_html(substr($s['imgapi']['baidu']['key'], -4)); ?>）</span><?php endif; ?>
+            </td></tr>
+            <tr><th>回填图优先</th><td><label><input type="checkbox" name="imgapi[prefer_paste]" value="1" <?php checked(!empty($s['imgapi']['prefer_paste'])); ?>> 有百度回填图时直接入库，跳过 GD 重绘</label></td></tr>
+            <tr><th>连接测试</th><td>
+                <button type="button" class="button" id="aipe-baidu-test">测试百度连接</button>
+                <span id="aipe-baidu-test-status" class="aipe-status"></span>
+                <p class="description">先点页面底部“保存设置”再测。测试发一张空白小图验证签名，鉴权通过即有效。</p>
+            </td></tr>
+        </table>
+
         <h2 class="title">图片输出</h2>
         <table class="form-table">
             <tr>
@@ -115,3 +135,4 @@ defined('ABSPATH') || exit;
         <li>图片管线对标 <b>MoeTranslate v5.2.0</b>：OCR 与翻译解耦、框合并排序、OCR 结果缓存，详见 README。</li>
     </ul>
 </div>
+

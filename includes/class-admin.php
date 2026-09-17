@@ -23,6 +23,7 @@ class AIPE_Admin {
         add_action('wp_ajax_aipe_apply_text', [__CLASS__, 'ajax_apply_text']);
         add_action('wp_ajax_aipe_preview_image', [__CLASS__, 'ajax_preview_image']);
         add_action('wp_ajax_aipe_create_job', [__CLASS__, 'ajax_create_job']);
+        add_action('wp_ajax_aipe_test_baidu', [__CLASS__, 'ajax_test_baidu']);
         add_action('wp_ajax_aipe_job_status', [__CLASS__, 'ajax_job_status']);
     }
 
@@ -69,6 +70,13 @@ class AIPE_Admin {
             }
         }
         $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (($s['img_source'] ?? 'vision') === 'baidu') {
+            $bc = AIPE_ImgApi::creds($s);
+            if (($bc['appid'] === '' || $bc['key'] === '') && $screen && (strpos((string) $screen->id, self::PAGE) !== false)) {
+                $url = admin_url('admin.php?page=' . self::PAGE);
+                echo '<div class="notice notice-warning"><p>AI 产品编辑器：图片翻译来源是百度，但 APP ID / 密钥没填，<a href="' . esc_url($url) . '">去设置</a>。</p></div>';
+            }
+        }
         if (!$has_key && $screen && ($screen->id === 'product' || strpos((string) $screen->id, self::PAGE) !== false)) {
             $url = admin_url('admin.php?page=' . self::PAGE);
             echo '<div class="notice notice-warning"><p>AI 产品编辑器：还没有填写任何供应商 Key，<a href="' . esc_url($url) . '">去设置</a>。</p></div>';
@@ -278,6 +286,19 @@ class AIPE_Admin {
         wp_send_json_success(['job_id' => $job_id]);
     }
 
+    /**
+     * 百度连接测试：用 keys 发一张白底小图；鉴权通过即有效（不花钱的是失败也分得清）。
+     */
+    public static function ajax_test_baidu() {
+        self::check();
+        try {
+            $r = AIPE_ImgApi::test_auth(AIPE_Settings::get());
+            wp_send_json_success($r);
+        } catch (Exception $e) {
+            wp_send_json_error(['code' => explode(':', $e->getMessage())[0], 'detail' => $e->getMessage()]);
+        }
+    }
+
     public static function ajax_job_status() {
         $job_id = (int) ($_POST['job_id'] ?? 0);
         self::check();
@@ -295,3 +316,4 @@ class AIPE_Admin {
         ]);
     }
 }
+

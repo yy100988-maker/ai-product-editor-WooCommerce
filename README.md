@@ -39,6 +39,21 @@
 OCR 结果按文件 md5 进 `aipe_cache`（kind=ocr），同一张图重复操作不重复调 vision 模型；
 预览结果可随任务下发（payload.items），任务执行时跳过 OCR+翻译。
 
+## 第三方图片翻译通道
+
+商品编辑页默认用 Vision 模型做 OCR；切到百度通道后 OCR+翻译+回填一次完成。
+
+| | Vision 模型 | 百度翻译开放平台 |
+|---|---|---|
+| 接口 | 自配 OpenAI 协议 vision 模型 | `fanyi-api.baidu.com/api/trans/sdk/picture`（[官方文档](https://fanyi-api.baidu.com/doc/26)） |
+| 鉴权 | Bearer Key | APP ID + 密钥，`sign=md5(appid+md5(原图字节)+salt+APICUID+mac+密钥)` |
+| 返回 | 只有框+原文，译文再走 LLM | 框+原文+译文+整图回填（`pasteImg`，优先直接入库） |
+| 目标语言 | 任意（en/ms/th/vi/es） | 仅百度列表（en/ms 等，无 th/vi/es） |
+| 开通 | 各模型供应商 | 百度翻译开放平台控制台 → 开通图片翻译（每月 1000 次免费） |
+
+Key 填在 **WooCommerce → AI 产品编辑** 设置页（脱敏存储，不进仓库），填完点「测试百度连接」一键验证签名。
+超限图（>4M/边>4096）本地先缩小再提交，签名用提交字节、坐标按比例换回原图。
+
 ## 设计取舍
 
 - **Key 直连供应商**：密钥只存本站 `wp_options`（autoload=false，页面脱敏），不经过 SaaS、不走 credits
@@ -73,3 +88,4 @@ ai-product-editor/
 php tests/test-offline.php        # 文本管线 + 任务 + 商品落库
 php tests/test-image.php          # OCR 解析/合并 + GD 擦除重绘（真实出图到系统临时目录）
 ```
+

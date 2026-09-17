@@ -17,6 +17,7 @@ class AIPE_Settings {
     public static function defaults() {
         return [
             'source_lang' => 'zh',
+            'img_source' => 'vision', // vision=Vision 模型 OCR；baidu=百度翻译开放平台图片翻译
             'target_lang' => 'en',
             'fallback_order' => ['siliconflow', 'openrouter'],
             'providers' => [
@@ -45,6 +46,10 @@ class AIPE_Settings {
             ],
             // 术语库：一行一条 "中文=English"，翻译时强制使用（标题/属性词/图内文字通用）。
             'glossary' => "连衣裙=Dress\n真丝=Mulberry Silk\n包邮=Free Shipping",
+            'imgapi' => [
+                'prefer_paste' => true, // 百度回填图优先入库（有 pasteImg 时跳过 GD 重绘）
+                'baidu' => ['appid' => '', 'key' => ''], // APP ID + 密钥（密钥脱敏存）
+            ],
             'image' => [
                 'max_width' => 1600,   // 输出图最长边上限，0=不缩放
                 'font_path' => '',     // 留空则自动探测系统字体
@@ -73,6 +78,13 @@ class AIPE_Settings {
     public static function save_from_post($post) {
         $s = self::get();
         $s['target_lang'] = sanitize_text_field($post['target_lang'] ?? 'en') ?: 'en';
+        $src = sanitize_key($post['img_source'] ?? 'vision');
+        $s['img_source'] = in_array($src, ['vision', 'baidu'], true) ? $src : 'vision';
+        $bi = $post['imgapi']['baidu'] ?? [];
+        $s['imgapi']['prefer_paste'] = !empty($post['imgapi']['prefer_paste']);
+        $s['imgapi']['baidu']['appid'] = sanitize_text_field($bi['appid'] ?? $s['imgapi']['baidu']['appid']);
+        $bk = trim($bi['key'] ?? '');
+        if ($bk !== '' && $bk !== '***') { $s['imgapi']['baidu']['key'] = $bk; }
         $s['glossary'] = self::sanitize_glossary($post['glossary'] ?? '');
 
         $order = [];
@@ -171,3 +183,5 @@ class AIPE_Settings {
         return $routes;
     }
 }
+
+

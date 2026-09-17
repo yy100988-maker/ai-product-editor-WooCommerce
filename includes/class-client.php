@@ -169,7 +169,7 @@ class AIPE_Client {
         throw new Exception('AIPE_EMPTY@' . $route['id']);
     }
 
-    protected static function multipart($fields, $files, $boundary) {
+    public static function multipart($fields, $files, $boundary) {
         $out = '';
         foreach ($fields as $f) {
             $out .= "--{$boundary}\r\n";
@@ -186,3 +186,4 @@ class AIPE_Client {
         return $out;
     }
 }
+

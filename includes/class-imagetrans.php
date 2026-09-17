@@ -40,6 +40,16 @@ class AIPE_ImageTrans {
         }
         list($w, $h) = [$info[0], $info[1]];
 
+        // 百度回填优先：有官方贴合图时直接入库，跳过 GD 重绘。
+        if (($s['img_source'] ?? 'vision') === 'baidu' && !empty($s['imgapi']['prefer_paste'])) {
+            $paste = AIPE_ImgApi::paste_for_file($file);
+            if ($paste !== null) {
+                $pid2 = AIPE_ImageGen::sideload_bytes($paste, get_the_title((int) $attachment_id) . ' (百度回填)', 'image_translate', ['provider' => 'baidu', 'model' => 'sdk-picture']);
+                update_post_meta($pid2, '_aipe_source_attachment', (int) $attachment_id);
+                return $pid2;
+            }
+        }
+
         $items = self::items_for_job((int) $attachment_id, (array) $payload, $s, $w, $h);
         $out = self::temp_path($file, $s['target_lang']);
         self::redraw($file, $out, $items, $s['image']);
@@ -78,6 +88,17 @@ class AIPE_ImageTrans {
         if (!$file || !file_exists($file)) {
             throw new Exception('AIPE_FILE_MISSING');
         }
+        if (($s['img_source'] ?? 'vision') === 'baidu') {
+            $d = AIPE_ImgApi::detect_cached($file, $s);
+            if (!$d['boxes']) {
+                throw new Exception('AIPE_NO_TEXT');
+            }
+            $out = [];
+            foreach ($d['boxes'] as $b) {
+                $out[] = ['box' => $b['box'], 'src' => $b['src'], 'dst' => $b['dst'], 'cached' => $d['hit']];
+            }
+            return $out;
+        }
         $boxes = self::ocr_cached($file, $s);
         if (!$boxes) {
             throw new Exception('AIPE_NO_TEXT');
@@ -112,6 +133,17 @@ class AIPE_ImageTrans {
         $file = get_attached_file((int) $attachment_id);
         if (!$file || !file_exists($file)) {
             throw new Exception('AIPE_FILE_MISSING');
+        }
+        if (($s['img_source'] ?? 'vision') === 'baidu') {
+            $d = AIPE_ImgApi::detect_cached($file, $s);
+            if (!$d['boxes']) {
+                throw new Exception('AIPE_NO_TEXT');
+            }
+            $items = [];
+            foreach ($d['boxes'] as $b) {
+                $items[] = ['rect' => self::scale_box($b['box'], $img_w, $img_h), 'dst' => $b['dst']];
+            }
+            return $items;
         }
         $boxes = self::ocr_cached($file, $s);
         if (!$boxes) {
@@ -196,7 +228,7 @@ class AIPE_ImageTrans {
             if ($box[2] < 20 && $box[3] < 14) {
                 continue;
             }
-            $kept[] = ['box' => $box, 'src' => $src];
+            $kept[] = ['box' => $box, 'src' => $src, 'dst' => isset($b['dst']) ? trim((string) $b['dst']) : null];
         }
         usort($kept, function ($a, $b) {
             if (abs($a['box'][1] - $b['box'][1]) > 10) {
@@ -221,6 +253,12 @@ class AIPE_ImageTrans {
                     $y2 = max($last['box'][1] + $last['box'][3], $b['box'][1] + $b['box'][3]);
                     $last['box'] = [$x1, $y1, $x2 - $x1, $y2 - $y1];
                     $last['src'] .= $b['src'];
+                    if ($last['dst'] !== null && $b['dst'] !== null && $b['dst'] !== '') {
+                        $ascii = !preg_match('/[\x{4e00}-\x{9fff}]/u', $last['dst']) && !preg_match('/[\x{4e00}-\x{9fff}]/u', $b['dst']);
+                        $last['dst'] .= ($ascii ? ' ' : '') . $b['dst'];
+                    } elseif ($last['dst'] === null) {
+                        $last['dst'] = $b['dst'];
+                    }
                     unset($last);
                     continue;
                 }
@@ -541,3 +579,9 @@ class AIPE_ImageTrans {
             || (bool) get_post_meta((int) $attachment_id, '_aipe_kind', true);
     }
 }
+
+
+
+
+
+
